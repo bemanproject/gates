@@ -43,7 +43,7 @@ that this requires GoogleTest to be installed.
 cmake \
   -B build \
   -S . \
-  -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_STANDARD=20 \
   # Your extra arguments here.
 cmake --build build
 ctest --test-dir build
@@ -85,7 +85,7 @@ vcpkg.
 ### FetchContent
 
 Instead of installing the project's dependencies via a package manager, you can optionally
-configure beman.exemplar to fetch them automatically via CMake FetchContent.
+configure beman.gates to fetch them automatically via CMake FetchContent.
 
 To do so, specify
 `-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=./infra/cmake/use-fetch-content.cmake`. This will
@@ -97,7 +97,7 @@ Example commands:
 cmake \
   -B build \
   -S . \
-  -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_STANDARD=20 \
   -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=./infra/cmake/use-fetch-content.cmake
 cmake --build build
 ctest --test-dir build
@@ -108,32 +108,32 @@ acquired by FetchContent.
 
 ## Project-specific configure arguments
 
-Project-specific options are prefixed with `BEMAN_EXEMPLAR`.
+Project-specific options are prefixed with `BEMAN_GATES`.
 You can see the list of available options with:
 
 ```bash
-cmake -LH -S . -B build | grep "BEMAN_EXEMPLAR" -C 2
+cmake -LH -S . -B build | grep "BEMAN_GATES" -C 2
 ```
 
 <details>
 
 <summary>Some project-specific configure arguments</summary>
 
-### `BEMAN_EXEMPLAR_BUILD_TESTS`
+### `BEMAN_GATES_BUILD_TESTS`
 
 Enable building tests and test infrastructure. Default: `ON`.
 Values: `{ ON, OFF }`.
 
-### `BEMAN_EXEMPLAR_BUILD_EXAMPLES`
+### `BEMAN_GATES_BUILD_EXAMPLES`
 
 Enable building examples. Default: `ON`. Values: `{ ON, OFF }`.
 
-### `BEMAN_EXEMPLAR_INSTALL_CONFIG_FILE_PACKAGE`
+### `BEMAN_GATES_INSTALL_CONFIG_FILE_PACKAGE`
 
 Enable installing the CMake config file package. Default: `ON`.
 Values: `{ ON, OFF }`.
 
-This is required so that users of `beman.exemplar` can use
-`find_package(beman.exemplar)` to locate the library.
+This is required so that users of `beman.gates` can use
+`find_package(beman.gates)` to locate the library.
 
 </details>

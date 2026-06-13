@@ -8,6 +8,6 @@ jobs:
   vcpkg-release:
     uses: bemanproject/infra-workflows/.github/workflows/reusable-beman-vcpkg-release.yml@1.7.3
     with:
-      port_name: beman-exemplar
+      port_name: beman-gates
     secrets:
       VCPKG_REGISTRY_TOKEN: ${{ secrets.VCPKG_REGISTRY_TOKEN }}

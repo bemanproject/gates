@@ -9,7 +9,7 @@ on:
   pull_request:
   workflow_dispatch:
   schedule:
-    - cron: '30 15 * * 6'
+    - cron: '52 14 * * 5'
 
 concurrency:
   group: ${{format('{0}:{1}', github.repository, github.ref)}}
@@ -48,7 +48,7 @@ jobs:
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
                         "Release.MaxSan", "Debug.Werror",
-                        "Debug.Coverage", "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Debug.Coverage", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -57,7 +57,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -73,7 +73,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -108,7 +108,7 @@ jobs:
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
                         "Release.MaxSan", "Debug.Werror",
-                        "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -117,7 +117,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++", "libc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -176,7 +176,7 @@ jobs:
                     { "stdlibs": ["stl"],
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.MaxSan",
-                        "Debug.-DBEMAN_EXEMPLAR_USE_MODULES=On"
+                        "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -189,7 +189,7 @@ jobs:
   vcpkg-ci:
     uses: bemanproject/infra-workflows/.github/workflows/reusable-beman-vcpkg-ci.yml@1.7.3
     with:
-      port_name: beman-exemplar
+      port_name: beman-gates
       feature_combinations: |
         [
           {"features": {}},

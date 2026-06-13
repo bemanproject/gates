@@ -1,8 +1,8 @@
 {
-  "name": "beman-exemplar",
+  "name": "beman-gates",
   "version-semver": "@VERSION@",
-  "description": "A Beman Library Exemplar",
-  "homepage": "https://github.com/bemanproject/exemplar",
+  "description": "Asynchronous synchronization primitives",
+  "homepage": "https://github.com/bemanproject/gates",
   "license": "Apache-2.0 WITH LLVM-exception",
   "dependencies": [
     {
@@ -16,7 +16,7 @@
   ],
   "features": {
     "modules": {
-      "description": "Provide beman.exemplar as a C++ module"
+      "description": "Provide beman.gates as a C++ module"
     }
   }
 }
