@@ -1,0 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+#ifndef BEMAN_GATES_CONFIG_GENERATED_HPP
+#define BEMAN_GATES_CONFIG_GENERATED_HPP
+
+#cmakedefine01 BEMAN_GATES_USE_MODULES()
+
+#endif

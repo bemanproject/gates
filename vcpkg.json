@@ -1,6 +1,6 @@
 {
-  "name": "beman-exemplar",
-  "version-semver": "2.4.1",
+  "name": "beman-gates",
+  "version-semver": "0.1.0",
   "dependencies": [
     {
       "name": "gtest",
