@@ -11,7 +11,7 @@ import beman.gates;
 
 #else
 
-    #include <beman/gates/todo.hpp>
+    #include <beman/gates/serial_gate.hpp>
 
 #endif // BEMAN_GATES_USE_MODULES() &&
        // !defined(BEMAN_GATES_INCLUDED_FROM_INTERFACE_UNIT)

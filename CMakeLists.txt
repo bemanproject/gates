@@ -31,6 +31,18 @@ if(BEMAN_GATES_USE_MODULES)
     set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 endif()
 
+include(FetchContent)
+
+FetchContent_Declare(
+    execution
+    # SOURCE_DIR ${CMAKE_SOURCE_DIR}/../execution
+    GIT_REPOSITORY https://github.com/bemanproject/execution
+    GIT_TAG cd3211e8f2fdeaa4237de3803513438cac20aa2b
+    FIND_PACKAGE_ARGS 0.3.0 EXACT NAMES beman.execution COMPONENTS execution_headers
+)
+FetchContent_MakeAvailable(execution)
+
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/beman/gates/config_generated.hpp.in"
     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
@@ -75,9 +87,14 @@ else()
     )
 endif()
 
+target_link_libraries(beman.gates INTERFACE beman::execution_headers)
+
+
 add_subdirectory(include/beman/gates)
 
-beman_install_library(beman.gates TARGETS beman.gates)
+beman_install_library(beman.gates TARGETS beman.gates
+    DEPENDENCIES [===[beman.task 0.3.0 EXACT]===]
+)
 configure_build_telemetry()
 
 if(BEMAN_GATES_BUILD_TESTS)

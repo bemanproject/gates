@@ -43,7 +43,7 @@ that this requires GoogleTest to be installed.
 cmake \
   -B build \
   -S . \
-  -DCMAKE_CXX_STANDARD=20 \
+  -DCMAKE_CXX_STANDARD=23 \
   # Your extra arguments here.
 cmake --build build
 ctest --test-dir build
