@@ -90,7 +90,11 @@ else()
     )
 endif()
 
-target_link_libraries(beman.gates INTERFACE beman::execution_headers)
+if(BEMAN_GATES_USE_MODULES)
+    target_link_libraries(beman.gates PUBLIC beman::execution_headers)
+else()
+    target_link_libraries(beman.gates INTERFACE beman::execution_headers)
+endif()
 
 add_subdirectory(include/beman/gates)
 
