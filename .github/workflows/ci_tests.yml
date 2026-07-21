@@ -48,7 +48,7 @@ jobs:
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
                         "Release.MaxSan", "Debug.Werror",
-                        "Debug.Coverage", "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Debug.Coverage"
                       ]
                     }
                   ]
@@ -57,7 +57,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Release.Default"
                       ]
                     }
                   ]
@@ -73,7 +73,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Release.Default"
                       ]
                     }
                   ]
@@ -107,8 +107,7 @@ jobs:
                     { "stdlibs": ["libstdc++", "libc++"],
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
-                        "Release.MaxSan", "Debug.Werror",
-                        "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Release.MaxSan", "Debug.Werror"
                       ]
                     }
                   ]
@@ -117,7 +116,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["libstdc++", "libc++"],
                       "tests": [
-                        "Release.Default", "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Release.Default"
                       ]
                     }
                   ]
@@ -175,8 +174,7 @@ jobs:
                   "tests": [
                     { "stdlibs": ["stl"],
                       "tests": [
-                        "Debug.Default", "Release.Default", "Release.MaxSan",
-                        "Debug.-DBEMAN_GATES_USE_MODULES=On"
+                        "Debug.Default", "Release.Default", "Release.MaxSan"
                       ]
                     }
                   ]
