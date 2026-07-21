@@ -38,7 +38,11 @@ FetchContent_Declare(
     # SOURCE_DIR ${CMAKE_SOURCE_DIR}/../execution
     GIT_REPOSITORY https://github.com/bemanproject/execution
     GIT_TAG cd3211e8f2fdeaa4237de3803513438cac20aa2b
-    FIND_PACKAGE_ARGS 0.3.0 EXACT NAMES beman.execution COMPONENTS execution_headers
+    FIND_PACKAGE_ARGS
+        0.3.0
+        EXACT
+        NAMES beman.execution
+        COMPONENTS execution_headers
 )
 FetchContent_MakeAvailable(execution)
 
@@ -88,7 +92,6 @@ else()
 endif()
 
 target_link_libraries(beman.gates INTERFACE beman::execution_headers)
-
 
 add_subdirectory(include/beman/gates)
 

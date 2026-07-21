@@ -9,7 +9,10 @@ target_link_libraries(
     PRIVATE beman::gates GTest::gtest_main
 )
 if(BEMAN_EXEMPLAR_USE_MODULES)
-    set_target_properties(beman.gates.tests.serial_gate PROPERTIES CXX_MODULE_STD ON)
+    set_target_properties(
+        beman.gates.tests.serial_gate
+        PROPERTIES CXX_MODULE_STD ON
+    )
 endif()
 
 include(GoogleTest)
