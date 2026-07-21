@@ -46,7 +46,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(execution)
 
-
 configure_file(
     "${PROJECT_SOURCE_DIR}/include/beman/gates/config_generated.hpp.in"
     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
@@ -96,7 +95,7 @@ target_link_libraries(beman.gates INTERFACE beman::execution_headers)
 add_subdirectory(include/beman/gates)
 
 beman_install_library(beman.gates TARGETS beman.gates
-    DEPENDENCIES [===[beman.task 0.3.0 EXACT]===]
+    DEPENDENCIES [===[beman.execution 0.3.0 EXACT COMPONENTS execution_headers]===]
 )
 configure_build_telemetry()
 
