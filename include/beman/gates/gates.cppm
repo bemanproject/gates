@@ -1,3 +1,7 @@
+module;
+
+#include <beman/execution/execution.hpp>
+
 export module beman.gates;
 
 import std;

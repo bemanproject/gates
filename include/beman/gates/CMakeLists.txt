@@ -9,7 +9,7 @@ if(BEMAN_GATES_USE_MODULES)
                 FILES
                     config.hpp
                     gates.hpp
-                    todo.hpp
+                    serial_gate.hpp
                     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
     )
 else()
@@ -20,7 +20,7 @@ else()
                 FILES
                     config.hpp
                     gates.hpp
-                    todo.hpp
+                    serial_gate.hpp
                     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
     )
 endif()
