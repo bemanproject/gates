@@ -17,8 +17,6 @@ import std;
     #include <atomic>
     #include <cstddef>
     #include <exception>
-    #include <mutex>
-    #include <vector>
 #endif
 
 namespace beman::gates::detail {
@@ -26,6 +24,7 @@ namespace beman::gates::detail {
 /// A simple, low-level task queue.
 ///
 /// - Requires: all tasks enqueued need to be completed before the queue is destroyed.
+/// - Note: the order of execution of tasks is not guaranteed.
 struct task_queue {
 
     task_queue() = default;
@@ -40,13 +39,15 @@ struct task_queue {
     /// If the queue is empty, starts the task immediately. Otherwise, the task will be started after the currently
     /// executing task completes.
     ///
+    /// - Requires: `t` must not be in the queue already.
     /// - Requires: `on_task_complete()` must be called after the task completes.
+    /// - Requires: `t` must not be destroyed before `on_task_complete()` is called for it.
     void enqueue(task_base* t) {
-        {
-            std::lock_guard lock{queue_bottleneck_};
-            queue_.emplace_back(t);
+        t->next_ = head_.load(std::memory_order_relaxed);
+        while (!head_.compare_exchange_weak(t->next_, t, std::memory_order_release, std::memory_order_relaxed)) {
         }
-        if (count_.fetch_add(1, ::std::memory_order_acq_rel) == 0) {
+
+        if (count_.fetch_add(1, std::memory_order_acq_rel) == 0) {
             start_next_task();
         }
     }
@@ -61,26 +62,35 @@ struct task_queue {
     }
 
   private:
+    /// Pops the next task from the queue; returns `nullptr` if the queue is empty.
+    task_base* pop() noexcept {
+        auto* old = head_.load(std::memory_order_acquire);
+        while (old != nullptr) {
+            auto* next = old->next_;
+            if (head_.compare_exchange_weak(old, next, std::memory_order_acquire, std::memory_order_relaxed)) {
+                return old;
+            }
+        }
+        return nullptr;
+    }
+
     /// Starts executing the next task in the queue.
     void start_next_task() {
-        task_base* next_task;
-        {
-            std::lock_guard lock{queue_bottleneck_};
-            next_task = queue_.front();
-            queue_.erase(queue_.begin());
+        task_base* next;
+        while ((next = pop()) == nullptr) {
+            // Should never happen.
+            // `count_` says a task exists, but we increment `count_` after we enqueue the task.
         }
-        next_task->execute_(next_task);
+        next->execute_(next);
     }
 
   private:
-    /// The number of tasks that are submitted to the gate; includes the task that is currently executing.
+    /// Scheduling counter for outstanding tasks; includes the task currently executing.
+    /// This is incremented after publishing a task to `head_`, so it can be transiently
+    /// lower than the number of visible queued/running tasks.
     std::atomic<size_t> count_{0};
-    /// Mutex protecting the queue of tasks.
-    std::mutex queue_bottleneck_;
-    /// The queue of tasks that are waiting to be executed.
-    std::vector<task_base*> queue_;
-
-    // TODO: better implementation
+    /// The head of the queue of tasks that are waiting to be executed.
+    std::atomic<task_base*> head_{nullptr};
 };
 
 } // namespace beman::gates::detail

@@ -17,3 +17,18 @@ endif()
 
 include(GoogleTest)
 gtest_discover_tests(beman.gates.tests.serial_gate DISCOVERY_TIMEOUT 60)
+
+add_executable(beman.gates.tests.task_queue)
+target_sources(beman.gates.tests.task_queue PRIVATE task_queue.test.cpp)
+target_link_libraries(
+    beman.gates.tests.task_queue
+    PRIVATE beman::gates GTest::gtest_main
+)
+if(BEMAN_EXEMPLAR_USE_MODULES)
+    set_target_properties(
+        beman.gates.tests.task_queue
+        PROPERTIES CXX_MODULE_STD ON
+    )
+endif()
+
+gtest_discover_tests(beman.gates.tests.task_queue DISCOVERY_TIMEOUT 60)
