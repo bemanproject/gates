@@ -34,7 +34,6 @@ TEST(SerialGateTest, SerialGateCanExecuteWorkWithinItsScope) {
 TEST(SerialGateTest, SerialGateCanExecuteMultipleWorkItems) {
 
     // Arrange
-    bool            executed = false;
     int             counter{0};
     ex::sender auto work = ex::just() | ex::then([&counter]() noexcept { ++counter; });
     serial_gate     sut;
@@ -56,7 +55,6 @@ TEST(SerialGateTest, SerialGateCanExecuteMultipleWorkItems) {
 TEST(SerialGateTest, SerialGateCanExecuteMultipleWorkItemsSerially) {
 
     // Arrange
-    bool             executed = false;
     std::atomic<int> counter{0};
     ex::sender auto  work = ex::just() | ex::then([&counter]() noexcept {
                                const int value = counter.fetch_add(1, std::memory_order_relaxed);
