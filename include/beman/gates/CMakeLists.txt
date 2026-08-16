@@ -10,6 +10,9 @@ if(BEMAN_GATES_USE_MODULES)
                     config.hpp
                     gates.hpp
                     serial_gate.hpp
+                    detail/scope_over_queue.hpp
+                    detail/task_base.hpp
+                    detail/task_queue.hpp
                     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
     )
 else()
@@ -21,6 +24,9 @@ else()
                     config.hpp
                     gates.hpp
                     serial_gate.hpp
+                    detail/scope_over_queue.hpp
+                    detail/task_base.hpp
+                    detail/task_queue.hpp
                     "${PROJECT_BINARY_DIR}/include/beman/gates/config_generated.hpp"
     )
 endif()
