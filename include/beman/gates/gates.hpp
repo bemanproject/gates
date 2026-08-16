@@ -13,7 +13,6 @@ import beman.gates;
 
     #include <beman/gates/serial_gate.hpp>
 
-#endif // BEMAN_GATES_USE_MODULES() &&
-       // !defined(BEMAN_GATES_INCLUDED_FROM_INTERFACE_UNIT)
+#endif
 
-#endif // BEMAN_GATES_GATES_HPP
+#endif
