@@ -67,7 +67,7 @@ struct task_queue {
         auto* old = head_.load(std::memory_order_acquire);
         while (old != nullptr) {
             auto* next = old->next_;
-            if (head_.compare_exchange_weak(old, next, std::memory_order_acquire, std::memory_order_relaxed)) {
+            if (head_.compare_exchange_weak(old, next, std::memory_order_acquire, std::memory_order_acquire)) {
                 return old;
             }
         }
