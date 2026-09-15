@@ -19,7 +19,10 @@ include(GoogleTest)
 gtest_discover_tests(beman.gates.tests.serial_gate DISCOVERY_TIMEOUT 60)
 
 add_executable(beman.gates.tests.serialized_access)
-target_sources(beman.gates.tests.serialized_access PRIVATE serialized_access.test.cpp)
+target_sources(
+    beman.gates.tests.serialized_access
+    PRIVATE serialized_access.test.cpp
+)
 target_link_libraries(
     beman.gates.tests.serialized_access
     PRIVATE beman::gates GTest::gtest_main
