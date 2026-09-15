@@ -30,6 +30,15 @@ struct serial_gate {
         return detail::scope_over_queue(&queue_);
     }
 
+    /// Returns an enter-scope sender that tries to enter `*this` without waiting.
+    ///
+    /// If the gate has outstanding work, either executing or queued, when the enter operation is executed, the enter
+    /// scope completes with `set_error(busy_error{})`. Otherwise, it enters the gate immediately and behaves like
+    /// `acquire()` for the lifetime of the scope.
+    [[nodiscard]] inline ::beman::execution::enter_scope_sender auto try_acquire() noexcept {
+        return detail::try_scope_over_queue(&queue_);
+    }
+
   private:
     /// The queue that serializes work through this gate.
     detail::task_queue queue_;

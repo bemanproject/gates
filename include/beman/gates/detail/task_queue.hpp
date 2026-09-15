@@ -23,7 +23,8 @@ namespace beman::gates::detail {
 
 /// A simple, low-level task queue.
 ///
-/// - Requires: all tasks enqueued need to be completed before the queue is destroyed.
+/// - Requires: all tasks accepted by `enqueue()` or `try_enqueue()` need to be completed before the queue is
+///   destroyed.
 /// - Note: the order of execution of tasks is not guaranteed.
 struct task_queue {
 
@@ -52,9 +53,26 @@ struct task_queue {
         }
     }
 
-    /// Notifies the queue that a task has completed.
+    /// Attempts to reserve the queue for `t` and start it immediately.
     ///
-    /// - Requires: `enqueue()` must have been called before the task started executing.
+    /// Returns `true` if the queue was idle and `t` was started; otherwise returns `false` without starting `t`.
+    ///
+    /// - Requires: `t` must not be in the queue already.
+    /// - Requires: if this returns `true`, `on_task_complete()` must be called after the task completes.
+    /// - Requires: if this returns `true`, `t` must not be destroyed before `on_task_complete()` is called for it.
+    bool try_enqueue(task_base* t) {
+        size_t expected = 0;
+        if (!count_.compare_exchange_strong(expected, 1, std::memory_order_acq_rel)) {
+            return false;
+        }
+        t->execute_(t);
+        return true;
+    }
+
+    /// Notifies the queue that a task accepted by `enqueue()` or `try_enqueue()` has completed.
+    ///
+    /// - Requires: `enqueue()` must have been called before the task started executing, or `try_enqueue()` must have
+    ///   returned `true` for the task.
     void on_task_complete() {
         if (count_.fetch_sub(1, ::std::memory_order_acq_rel) > 1) {
             start_next_task();

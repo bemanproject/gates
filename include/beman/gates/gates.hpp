@@ -11,6 +11,7 @@ import beman.gates;
 
 #else
 
+    #include <beman/gates/busy_error.hpp>
     #include <beman/gates/serial_gate.hpp>
 
 #endif
