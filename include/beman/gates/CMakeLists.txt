@@ -11,6 +11,7 @@ if(BEMAN_GATES_USE_MODULES)
                     gates.hpp
                     busy_error.hpp
                     serial_gate.hpp
+                    serialized_access.hpp
                     detail/generic_sender.hpp
                     detail/scope_over_queue.hpp
                     detail/task_base.hpp
@@ -27,6 +28,7 @@ else()
                     gates.hpp
                     busy_error.hpp
                     serial_gate.hpp
+                    serialized_access.hpp
                     detail/generic_sender.hpp
                     detail/scope_over_queue.hpp
                     detail/task_base.hpp

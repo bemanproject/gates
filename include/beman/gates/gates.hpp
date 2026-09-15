@@ -13,6 +13,7 @@ import beman.gates;
 
     #include <beman/gates/busy_error.hpp>
     #include <beman/gates/serial_gate.hpp>
+    #include <beman/gates/serialized_access.hpp>
 
 #endif
 
