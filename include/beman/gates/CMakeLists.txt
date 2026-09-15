@@ -9,7 +9,9 @@ if(BEMAN_GATES_USE_MODULES)
                 FILES
                     config.hpp
                     gates.hpp
+                    busy_error.hpp
                     serial_gate.hpp
+                    detail/generic_sender.hpp
                     detail/scope_over_queue.hpp
                     detail/task_base.hpp
                     detail/task_queue.hpp
@@ -23,7 +25,9 @@ else()
                 FILES
                     config.hpp
                     gates.hpp
+                    busy_error.hpp
                     serial_gate.hpp
+                    detail/generic_sender.hpp
                     detail/scope_over_queue.hpp
                     detail/task_base.hpp
                     detail/task_queue.hpp
