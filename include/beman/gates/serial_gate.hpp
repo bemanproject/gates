@@ -17,6 +17,28 @@ import beman.execution;
 
 namespace beman::gates {
 
+namespace detail {
+
+/// Trait that wraps a `task_queue` and uses it in a non-speculative manner.
+struct queue_access_trait {
+    using queue_type                  = task_queue;
+    static constexpr bool speculative = false;
+
+    static void enqueue(queue_type* queue, task_base* task) { queue->enqueue(task); }
+    static void on_scope_complete(queue_type* queue) { queue->on_task_complete(); }
+};
+
+/// Trait that wraps a `task_queue` and uses it in a speculative manner.
+struct speculative_queue_access_trait {
+    using queue_type                  = task_queue;
+    static constexpr bool speculative = true;
+
+    static bool enqueue(queue_type* queue, task_base* task) { return queue->try_enqueue(task); }
+    static void on_scope_complete(queue_type* queue) { queue->on_task_complete(); }
+};
+
+} // namespace detail
+
 /// A gate that allows maximum one work item to be executed at a time.
 struct serial_gate {
     serial_gate()  = default;
@@ -27,7 +49,7 @@ struct serial_gate {
 
     /// Returns an enter-scope sender that serializes protected work through `*this`.
     [[nodiscard]] inline ::beman::execution::enter_scope_sender auto acquire() noexcept {
-        return detail::scope_over_queue(&queue_);
+        return detail::scope_over_queue<detail::queue_access_trait>(&queue_);
     }
 
     /// Returns an enter-scope sender that tries to enter `*this` without waiting.
@@ -36,7 +58,7 @@ struct serial_gate {
     /// scope completes with `set_error(busy_error{})`. Otherwise, it enters the gate immediately and behaves like
     /// `acquire()` for the lifetime of the scope.
     [[nodiscard]] inline ::beman::execution::enter_scope_sender auto try_acquire() noexcept {
-        return detail::try_scope_over_queue(&queue_);
+        return detail::scope_over_queue<detail::speculative_queue_access_trait>(&queue_);
     }
 
   private:
