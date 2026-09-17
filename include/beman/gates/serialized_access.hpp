@@ -25,28 +25,47 @@ import std;
 
 namespace beman::gates::detail {
 
+/// The way we are accessing the value stored in `serialized_access`.
+enum class serialized_access_mode { exclusive, try_exclusive, shared, try_shared };
+
+/// Concept that indicates whether `Gate` supports shared access.
+template <typename Gate>
+concept is_shared_gate = requires(Gate& gate) {
+    { gate.acquire_shared() } -> ::beman::execution::enter_scope_sender;
+    { gate.try_acquire_shared() } -> ::beman::execution::enter_scope_sender;
+};
+
 /// Sender adaptor used by serialized_access's access functions.
-template <bool Async, bool Try, typename Access, typename F>
+template <serialized_access_mode Mode, bool Async, typename Storage, typename F>
 struct serialized_access_closure
-    : ::beman::execution::sender_adaptor_closure<serialized_access_closure<Async, Try, Access, F>> {
-    Access* access;
-    F       fun;
+    : ::beman::execution::sender_adaptor_closure<serialized_access_closure<Mode, Async, Storage, F>> {
+    Storage* storage_;
+    F        fun_;
 
     template <typename G>
-    serialized_access_closure(Access* access_, G&& fun_) : access(access_), fun(::std::forward<G>(fun_)) {}
+    serialized_access_closure(Storage* storage, G&& f) : storage_(storage), fun_(::std::forward<G>(f)) {}
 
     template <typename Self, ::beman::execution::sender Sender>
     auto operator()(this Self&& self, Sender&& sender) {
-        auto* access = self.access;
-        auto  invoke = [access, fun = ::std::forward<Self>(self).fun](auto&&... args) mutable -> decltype(auto) {
-            return ::std::invoke(::std::move(fun), access->value_, ::std::forward<decltype(args)>(args)...);
+        auto* storage = self.storage_;
+        auto  invoke  = [storage, fun = ::std::forward<Self>(self).fun_](auto&&... args) mutable -> decltype(auto) {
+            if constexpr (Mode == serialized_access_mode::shared || Mode == serialized_access_mode::try_shared) {
+                return ::std::invoke(
+                    ::std::move(fun), ::std::as_const(storage->value_), ::std::forward<decltype(args)>(args)...);
+            } else {
+                return ::std::invoke(::std::move(fun), storage->value_, ::std::forward<decltype(args)>(args)...);
+            }
         };
 
         auto scope = [&] {
-            if constexpr (Try) {
-                return access->gate_.try_acquire();
-            } else {
-                return access->gate_.acquire();
+            if constexpr (Mode == serialized_access_mode::exclusive) {
+                return storage->gate_.acquire();
+            } else if constexpr (Mode == serialized_access_mode::try_exclusive) {
+                return storage->gate_.try_acquire();
+            } else if constexpr (Mode == serialized_access_mode::shared) {
+                return storage->gate_.acquire_shared();
+            } else if constexpr (Mode == serialized_access_mode::try_shared) {
+                return storage->gate_.try_acquire_shared();
             }
         }();
 
@@ -60,9 +79,9 @@ struct serialized_access_closure
     }
 };
 
-template <bool Async, bool Try, typename Access, typename F>
-auto make_serialized_access_closure(Access* access, F&& fun)
-    -> serialized_access_closure<Async, Try, Access, ::std::remove_cvref_t<F>> {
+template <serialized_access_mode Mode, bool Async, typename Storage, typename F>
+auto make_serialized_access_closure(Storage* access, F&& fun)
+    -> serialized_access_closure<Mode, Async, Storage, ::std::remove_cvref_t<F>> {
     return {access, ::std::forward<F>(fun)};
 }
 
@@ -70,8 +89,8 @@ auto make_serialized_access_closure(Access* access, F&& fun)
 
 namespace beman::gates {
 
-/// Associates a value with a serial gate and provides serialized access to that value.
-template <typename T>
+/// Associates a value with a gate and provides exclusive access, and optionally shared access, to that value.
+template <typename T, typename Gate = serial_gate>
 struct serialized_access {
     /// Constructs the contained `T` object with `std::forward<Args>(args)...`.
     template <typename... Args>
@@ -86,7 +105,8 @@ struct serialized_access {
     template <typename Self, typename F>
         requires ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> && ::std::is_lvalue_reference_v<Self&&>
     [[nodiscard]] auto apply(this Self&& self, F&& f) {
-        return detail::make_serialized_access_closure<false, false>(&self, ::std::forward<F>(f));
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::exclusive, false>(
+            &self, ::std::forward<F>(f));
     }
 
     /// Returns a sender adaptor closure that invokes `f` with the protected value followed by the predecessor's values
@@ -94,7 +114,8 @@ struct serialized_access {
     template <typename Self, typename F>
         requires ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> && ::std::is_lvalue_reference_v<Self&&>
     [[nodiscard]] auto apply_async(this Self&& self, F&& f) {
-        return detail::make_serialized_access_closure<true, false>(&self, ::std::forward<F>(f));
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::exclusive, true>(
+            &self, ::std::forward<F>(f));
     }
 
     /// Returns a sender adaptor closure that tries to invoke `f` as for `apply`, completing with `busy_error` without
@@ -102,7 +123,8 @@ struct serialized_access {
     template <typename Self, typename F>
         requires ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> && ::std::is_lvalue_reference_v<Self&&>
     [[nodiscard]] auto try_apply(this Self&& self, F&& f) {
-        return detail::make_serialized_access_closure<false, true>(&self, ::std::forward<F>(f));
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::try_exclusive, false>(
+            &self, ::std::forward<F>(f));
     }
 
     /// Returns a sender adaptor closure that tries to invoke `f` as for `apply_async`, completing with `busy_error`
@@ -110,16 +132,57 @@ struct serialized_access {
     template <typename Self, typename F>
         requires ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> && ::std::is_lvalue_reference_v<Self&&>
     [[nodiscard]] auto try_apply_async(this Self&& self, F&& f) {
-        return detail::make_serialized_access_closure<true, true>(&self, ::std::forward<F>(f));
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::try_exclusive, true>(
+            &self, ::std::forward<F>(f));
+    }
+
+    /// Returns a sender adaptor closure that invokes `f` with the protected value as `const T&` followed by the
+    /// predecessor's values while shared access is held.
+    template <typename Self, typename F>
+        requires detail::is_shared_gate<Gate> && ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> &&
+                 ::std::is_lvalue_reference_v<Self&&>
+    [[nodiscard]] auto apply_shared(this Self&& self, F&& f) {
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::shared, false>(
+            &self, ::std::forward<F>(f));
+    }
+
+    /// Returns a sender adaptor closure that invokes `f` with the protected value as `const T&` followed by the
+    /// predecessor's values and holds shared access until the sender returned by `f` completes.
+    template <typename Self, typename F>
+        requires detail::is_shared_gate<Gate> && ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> &&
+                 ::std::is_lvalue_reference_v<Self&&>
+    [[nodiscard]] auto apply_shared_async(this Self&& self, F&& f) {
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::shared, true>(
+            &self, ::std::forward<F>(f));
+    }
+
+    /// Returns a sender adaptor closure that tries to invoke `f` as for `apply_shared`, completing with `busy_error`
+    /// without invoking `f` if shared access cannot be acquired immediately.
+    template <typename Self, typename F>
+        requires detail::is_shared_gate<Gate> && ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> &&
+                 ::std::is_lvalue_reference_v<Self&&>
+    [[nodiscard]] auto try_apply_shared(this Self&& self, F&& f) {
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::try_shared, false>(
+            &self, ::std::forward<F>(f));
+    }
+
+    /// Returns a sender adaptor closure that tries to invoke `f` as for `apply_shared_async`, completing with
+    /// `busy_error` without invoking `f` if shared access cannot be acquired immediately.
+    template <typename Self, typename F>
+        requires detail::is_shared_gate<Gate> && ::std::same_as<::std::remove_cvref_t<Self>, serialized_access> &&
+                 ::std::is_lvalue_reference_v<Self&&>
+    [[nodiscard]] auto try_apply_shared_async(this Self&& self, F&& f) {
+        return detail::make_serialized_access_closure<detail::serialized_access_mode::try_shared, true>(
+            &self, ::std::forward<F>(f));
     }
 
   private:
-    /// Gate that ensures serialized access to `value_`.
-    mutable serial_gate gate_;
+    /// Gate that controls access to `value_`.
+    mutable Gate gate_;
     /// The value protected by `gate_`.
     T value_;
 
-    template <bool, bool, typename, typename>
+    template <detail::serialized_access_mode, bool, typename, typename>
     friend struct detail::serialized_access_closure;
 };
 
