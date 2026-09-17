@@ -29,7 +29,7 @@ struct synchronized_value {
     /// Constructs the contained `T` object with `std::forward<Args>(args)...`.
     template <typename... Args>
         requires ::std::constructible_from<T, Args...>
-    explicit synchronized_value(::std::in_place_t, Args&&... args) : lock_{}, value_(::std::forward<Args>(args)...) {}
+    explicit synchronized_value(::std::in_place_t, Args&&... args) : value_(::std::forward<Args>(args)...), lock_{} {}
 
     /// Applies `f` to the protected value in a synchronized manner.
     template <typename F>
