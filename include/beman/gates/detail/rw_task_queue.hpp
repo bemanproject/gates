@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-#ifndef BEMAN_GATES_DETAIL_RW_TASK_QUEUE_RW_TASK_QUEUE_HPP
-#define BEMAN_GATES_DETAIL_RW_TASK_QUEUE_RW_TASK_QUEUE_HPP
+#ifndef BEMAN_GATES_DETAIL_RW_TASK_QUEUE_HPP
+#define BEMAN_GATES_DETAIL_RW_TASK_QUEUE_HPP
 
 #include <beman/gates/config.hpp>
 
 #if BEMAN_GATES_USE_MODULES() && !defined(BEMAN_GATES_INCLUDED_FROM_INTERFACE_UNIT)
 import beman.gates;
 #else
+    #include <beman/gates/detail/synchronized_value.hpp>
     #include <beman/gates/detail/task_base.hpp>
 #endif
 
@@ -35,9 +36,12 @@ struct rw_task_queue {
 
     rw_task_queue() = default;
     ~rw_task_queue() {
-        if (active_readers_ != 0 || active_writer_ || waiting_readers_count_ != 0 || waiting_writers_count_ != 0) {
-            std::terminate();
-        }
+        data_.apply([&](queue_data& data) noexcept {
+            if (data.active_readers_ != 0 || data.active_writer_ || data.waiting_readers_count_ != 0 ||
+                data.waiting_writers_count_ != 0) {
+                std::terminate();
+            }
+        });
     }
 
     rw_task_queue(const rw_task_queue&)            = delete;
@@ -57,16 +61,14 @@ struct rw_task_queue {
     /// - Requires: `t` must not be destroyed before `on_task_complete()` is called for it.
     void enqueue(task_base* t, access requested_access) noexcept {
         task_base* ready = nullptr;
-        lock();
-
-        if (can_start(requested_access)) {
-            activate(requested_access);
-            ready = t;
-        } else {
-            add_pending(t, requested_access);
-        }
-
-        unlock();
+        data_.apply([&](queue_data& data) noexcept {
+            if (can_start(requested_access, data)) {
+                activate(requested_access, data);
+                ready = t;
+            } else {
+                add_pending(t, requested_access, data);
+            }
+        });
         start_tasks(ready);
     }
 
@@ -80,12 +82,13 @@ struct rw_task_queue {
     /// - Requires: if this returns `true`, `on_task_complete()` must be called after the task completes.
     /// - Requires: if this returns `true`, `t` must not be destroyed before `on_task_complete()` is called for it.
     [[nodiscard]] bool try_enqueue(task_base* t, access requested_access) noexcept {
-        lock();
-        const bool accepted = can_start(requested_access);
-        if (accepted) {
-            activate(requested_access);
-        }
-        unlock();
+        bool accepted = false;
+        data_.apply([&](queue_data& data) noexcept {
+            accepted = can_start(requested_access, data);
+            if (accepted) {
+                activate(requested_access, data);
+            }
+        });
 
         if (accepted) {
             start_tasks(t);
@@ -103,77 +106,85 @@ struct rw_task_queue {
     ///   returned `true` for the task.
     void on_task_complete(access completed_access) noexcept {
         task_base* ready = nullptr;
-        lock();
-
-        if (completed_access == access::shared) {
-            --active_readers_;
-        } else {
-            active_writer_ = false;
-        }
-
-        if (!active_writer_ && active_readers_ == 0) {
-            if (waiting_writers_count_ != 0) {
-                ready = pop(waiting_writers_);
-                --waiting_writers_count_;
-                active_writer_ = true;
-            } else if (waiting_readers_count_ != 0) {
-                ready                  = waiting_readers_;
-                waiting_readers_       = nullptr;
-                active_readers_        = waiting_readers_count_;
-                waiting_readers_count_ = 0;
+        data_.apply([&](queue_data& data) noexcept {
+            if (completed_access == access::shared) {
+                --data.active_readers_;
+            } else {
+                data.active_writer_ = false;
             }
-        }
 
-        unlock();
+            if (!data.active_writer_ && data.active_readers_ == 0) {
+                if (data.waiting_writers_count_ != 0) {
+                    ready = pop(data.waiting_writers_);
+                    --data.waiting_writers_count_;
+                    data.active_writer_ = true;
+                } else if (data.waiting_readers_count_ != 0) {
+                    ready                       = data.waiting_readers_;
+                    data.waiting_readers_       = nullptr;
+                    data.active_readers_        = data.waiting_readers_count_;
+                    data.waiting_readers_count_ = 0;
+                }
+            }
+        });
         start_tasks(ready);
     }
 
   private:
-    /// Returns whether an access can start immediately under the writer-preference policy.
-    ///
-    /// - Requires: The caller must hold the queue lock.
-    [[nodiscard]] bool can_start(access requested_access) const noexcept {
+    /// The queue state.
+    struct queue_data {
+        /// Number of currently active shared tasks.
+        std::size_t active_readers_{0};
+        /// Whether an exclusive task is currently active.
+        bool active_writer_{false};
+        /// Pending shared-access tasks.
+        task_base* waiting_readers_{nullptr};
+        /// Pending exclusive-access tasks.
+        task_base* waiting_writers_{nullptr};
+        /// Number of pending shared-access tasks.
+        std::size_t waiting_readers_count_{0};
+        /// Number of pending exclusive-access tasks.
+        std::size_t waiting_writers_count_{0};
+    };
+
+    /// The synchronized queue state.
+    synchronized_value<queue_data> data_{::std::in_place};
+
+    /// Returns whether an access can start immediately under the writer-preference policy in `data`.
+    [[nodiscard]] static bool can_start(access requested_access, const queue_data& data) noexcept {
         if (requested_access == access::shared) {
-            return !active_writer_ && waiting_writers_count_ == 0;
+            return !data.active_writer_ && data.waiting_writers_count_ == 0;
         }
-        return !active_writer_ && active_readers_ == 0 && waiting_readers_count_ == 0 && waiting_writers_count_ == 0;
+        return !data.active_writer_ && data.active_readers_ == 0 && data.waiting_readers_count_ == 0 &&
+               data.waiting_writers_count_ == 0;
     }
 
-    /// Marks an immediately admitted access as active.
-    ///
-    /// - Requires: The caller must hold the queue lock.
-    void activate(access requested_access) noexcept {
+    /// Marks an immediately admitted access as active in `data`.
+    static void activate(access requested_access, queue_data& data) noexcept {
         if (requested_access == access::shared) {
-            ++active_readers_;
+            ++data.active_readers_;
         } else {
-            active_writer_ = true;
+            data.active_writer_ = true;
         }
     }
 
-    /// Adds a task to the pending list for `requested_access`.
-    ///
-    /// - Requires: The caller must hold the queue lock.
-    void add_pending(task_base* task, access requested_access) noexcept {
+    /// Adds a task to the pending list in `data` for `requested_access`.
+    static void add_pending(task_base* task, access requested_access, queue_data& data) noexcept {
         if (requested_access == access::shared) {
-            push(waiting_readers_, task);
-            ++waiting_readers_count_;
+            push(data.waiting_readers_, task);
+            ++data.waiting_readers_count_;
         } else {
-            push(waiting_writers_, task);
-            ++waiting_writers_count_;
+            push(data.waiting_writers_, task);
+            ++data.waiting_writers_count_;
         }
     }
 
     /// Adds `task` to the head of an intrusive pending list.
-    ///
-    /// - Requires: The caller must hold the queue lock.
     static void push(task_base*& head, task_base* task) noexcept {
         task->next_ = head;
         head        = task;
     }
 
     /// Removes and returns the head of an intrusive pending list.
-    ///
-    /// - Requires: The caller must hold the queue lock.
     static task_base* pop(task_base*& head) noexcept {
         task_base* result = head;
         head              = result->next_;
@@ -182,8 +193,6 @@ struct rw_task_queue {
     }
 
     /// Starts all tasks in the supplied list. The list is detached from the queue before this is called.
-    ///
-    /// - Note: Should be called outside of the queue lock.
     static void start_tasks(task_base* task) noexcept {
         while (task != nullptr) {
             task_base* next = task->next_;
@@ -191,39 +200,6 @@ struct rw_task_queue {
             task = next;
         }
     }
-
-    /// Acquires the queue lock.
-    ///
-    /// - Requires: The caller must not already hold the queue lock.
-    void lock() noexcept {
-        while (lock_.test_and_set(std::memory_order_acquire)) {
-            lock_.wait(true, std::memory_order_relaxed);
-        }
-    }
-
-    /// Releases the queue lock.
-    ///
-    /// - Requires: The caller must hold the queue lock.
-    void unlock() noexcept {
-        lock_.clear(std::memory_order_release);
-        lock_.notify_one();
-    }
-
-  private:
-    /// Number of currently active shared tasks.
-    std::size_t active_readers_{0};
-    /// Whether an exclusive task is currently active.
-    bool active_writer_{false};
-    /// Pending shared-access tasks.
-    task_base* waiting_readers_{nullptr};
-    /// Pending exclusive-access tasks.
-    task_base* waiting_writers_{nullptr};
-    /// Number of pending shared-access tasks.
-    std::size_t waiting_readers_count_{0};
-    /// Number of pending exclusive-access tasks.
-    std::size_t waiting_writers_count_{0};
-    /// Protects the queue state. Critical sections never execute user code.
-    std::atomic_flag lock_{};
 };
 
 } // namespace beman::gates::detail
