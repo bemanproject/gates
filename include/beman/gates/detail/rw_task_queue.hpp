@@ -72,8 +72,9 @@ struct rw_task_queue {
 
     /// Attempts to reserve the queue for `t` and start it immediately.
     ///
-    /// A shared task succeeds when no exclusive task is active or waiting, including when other shared tasks are active.
-    /// An exclusive task succeeds only when the queue is idle. Otherwise, this returns `false` without starting `t`.
+    /// A shared task succeeds when no exclusive task is active or waiting, including when other shared tasks are
+    /// active. An exclusive task succeeds only when the queue is idle. Otherwise, this returns `false` without
+    /// starting `t`.
     ///
     /// - Requires: `t` must not be in the queue already.
     /// - Requires: if this returns `true`, `on_task_complete()` must be called after the task completes.
@@ -94,9 +95,9 @@ struct rw_task_queue {
 
     /// Notifies the queue that a task accepted by `enqueue()` or `try_enqueue()` has completed.
     ///
-    /// If the completed task was shared and other shared tasks remain active, no task is started. Once the queue becomes
-    /// idle, one pending exclusive task is started before any pending shared tasks. If no exclusive task is waiting,
-    /// all pending shared tasks are started together.
+    /// If the completed task was shared and other shared tasks remain active, no task is started. Once the queue
+    /// becomes idle, one pending exclusive task is started before any pending shared tasks. If no exclusive task is
+    /// waiting, all pending shared tasks are started together.
     ///
     /// - Requires: `enqueue()` must have been called before the task started executing, or `try_enqueue()` must have
     ///   returned `true` for the task.
