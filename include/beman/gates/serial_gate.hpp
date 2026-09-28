@@ -54,9 +54,8 @@ struct serial_gate {
 
     /// Returns an enter-scope sender that tries to enter `*this` without waiting.
     ///
-    /// If the gate has outstanding work, either executing or queued, when the enter operation is executed, the enter
-    /// scope completes with `set_error(busy_error{})`. Otherwise, it enters the gate immediately and behaves like
-    /// `acquire()` for the lifetime of the scope.
+    /// If the gate cannot be reserved immediately, the enter scope completes with
+    /// `set_error(busy_error{})`; otherwise it behaves like acquire().
     [[nodiscard]] inline ::beman::execution::enter_scope_sender auto try_acquire() noexcept {
         return detail::scope_over_queue<detail::speculative_queue_access_trait>(&queue_);
     }
