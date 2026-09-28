@@ -23,7 +23,7 @@ auto read_response(request req, connection& conn) noexcept { return just(respons
 
 void process_response(const response& conn) noexcept { std::print("processing response: {}\n", conn.data); }
 
-auto send_request(connection& conn, request req) { return just(std::move(req)); }
+auto send_request(connection&, request req) { return just(std::move(req)); }
 
 void continue_after_submit() noexcept { std::print("Continuing after submit\n"); }
 
