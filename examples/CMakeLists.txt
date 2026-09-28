@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 set(ALL_EXAMPLES
-    serial_gate-cache
-    serial_gate-work_outside_gate
-    serial_gate-serializer_protocol
-    serial_gate-save_doc
-    serial_gate-try_save_doc
+    serial_gate.cache
+    serial_gate.work_outside_gate
+    serial_gate.serializer_protocol
+    serial_gate.save_doc
+    serial_gate.try_save_doc
 )
 message("Examples to be built: ${ALL_EXAMPLES}")
 

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include <beman/gates/serial_gate.hpp>
 #include <beman/execution/execution.hpp>
 
@@ -5,7 +7,6 @@
 #include <chrono>
 #include <thread>
 
-using beman::gates::busy_error;
 using beman::gates::serial_gate;
 using namespace beman::execution;
 
@@ -25,12 +26,9 @@ counting_scope scope;
 void trigger_save(document d) {
     auto work = just(std::move(d)) | let_value(save_async);
 
-    auto protected_work = within(gate.try_acquire(), std::move(work)); // UPDATE: speculative execution
+    auto protected_work = within(gate.acquire(), std::move(work));
 
-    // NEW: ignore the error
-    auto handle_error = std::move(protected_work) | upon_error([](busy_error) noexcept {});
-
-    spawn(std::move(handle_error), scope.get_token());
+    spawn(std::move(protected_work), scope.get_token());
 }
 
 int main() {

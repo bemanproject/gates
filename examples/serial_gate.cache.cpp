@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include <beman/gates/serial_gate.hpp>
 #include <beman/execution/execution.hpp>
 
