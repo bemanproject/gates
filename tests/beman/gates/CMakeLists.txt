@@ -14,7 +14,7 @@ foreach(test ${ALL_TESTS})
         beman.gates.tests.${test}
         PRIVATE beman::gates GTest::gtest_main
     )
-    if(BEMAN_EXEMPLAR_USE_MODULES)
+    if(BEMAN_GATES_USE_MODULES)
         set_target_properties(
             beman.gates.tests.${test}
             PROPERTIES CXX_MODULE_STD ON

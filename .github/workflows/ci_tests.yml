@@ -48,7 +48,7 @@ jobs:
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
                         "Release.MaxSan", "Debug.Werror",
-                        "Debug.Coverage"
+                        "Debug.Coverage", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
@@ -93,7 +93,7 @@ jobs:
                     { "stdlibs": ["libstdc++", "libc++"],
                       "tests": [
                         "Debug.Default", "Release.Default", "Release.TSan",
-                        "Release.MaxSan"
+                        "Release.MaxSan", "Debug.-DBEMAN_GATES_USE_MODULES=On"
                       ]
                     }
                   ]
